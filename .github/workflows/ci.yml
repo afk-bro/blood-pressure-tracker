@@ -1,0 +1,134 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  changes:
+    name: Detect changes
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Paths filter
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          filters: |
+            backend:
+              - 'backend/**'
+            frontend:
+              - 'frontend/**'
+            # add more shared paths if you want both jobs to run:
+            # shared:
+            #   - '.github/workflows/**'
+            #   - 'docs/**'
+
+  backend:
+    name: Backend (FastAPI + pytest)
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: |
+            backend/requirements.txt
+            backend/requirements-dev.txt
+            backend/pyproject.toml
+            backend/poetry.lock
+
+      - name: Install deps (pip)
+        if: hashFiles('backend/pyproject.toml') == ''
+        run: |
+          pip install --upgrade pip
+          if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
+      - name: Install deps (Poetry)
+        if: hashFiles('backend/pyproject.toml') != '' && hashFiles('backend/poetry.lock') != ''
+        run: |
+          pip install poetry
+          poetry install --no-interaction --no-ansi
+
+      - name: Run tests (pytest)
+        env:
+          ENV: test
+        run: |
+          pytest -q --maxfail=1 --disable-warnings --cache-clear \
+            --junitxml=../test-results/backend-junit.xml \
+            --cov=. --cov-report=xml:../coverage/backend-coverage.xml
+
+      - name: Upload backend artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-results
+          path: |
+            coverage.xml
+            ../coverage/backend-coverage.xml
+            ../test-results/backend-junit.xml
+          if-no-files-found: ignore
+
+  frontend:
+    name: Frontend (Vite + Vitest)
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install
+        run: |
+          if [ -f package-lock.json ]; then npm ci; else npm install; fi
+
+      - name: Test (Vitest)
+        env:
+          CI: true
+        run: |
+          npm run test
+
+      - name: Build
+        run: |
+          if npm run | grep -q "build"; then npm run build; else echo "No build script"; fi
+
+      - name: Upload frontend build
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-build
+          path: |
+            dist
+            build
+            out
+          if-no-files-found: ignore
