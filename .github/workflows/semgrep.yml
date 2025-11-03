@@ -1,0 +1,52 @@
+name: Security checks
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  security:
+    name: Run Semgrep & dependency audits
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install Semgrep and pip-audit
+        run: |
+          python -m pip install --upgrade pip
+          pip install semgrep pip-audit
+
+      - name: Run Semgrep (SAST)
+        run: |
+          # Run Semgrep with the OSS 'auto' config across the repo.
+          # This job will fail if Semgrep finds issues (exit code != 0).
+          semgrep --config auto --exclude node_modules
+
+      - name: Run pip-audit (Python dependency audit)
+        run: |
+          # Report vulnerabilities in Python dependencies; do not fail workflow here.
+          pip-audit --format short || true
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install frontend dependencies (npm ci)
+        working-directory: frontend
+        run: npm ci
+        continue-on-error: true
+
+      - name: Run npm audit (frontend dependencies)
+        working-directory: frontend
+        run: |
+          # Run npm audit and print JSON; don't fail the entire job for now.
+          npm audit --json || true

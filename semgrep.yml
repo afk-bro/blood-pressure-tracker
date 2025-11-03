@@ -1,0 +1,3 @@
+# Semgrep configuration file (empty ruleset by default).
+# You can customise this to include specific community rules or local rules.
+rules: []
