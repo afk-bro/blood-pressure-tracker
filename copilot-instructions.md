@@ -2,6 +2,13 @@
 
 These instructions tune Copilot (and human contributors) to work effectively in this repository. They capture the current tech stack, architecture, coding style, testing approach, and CI/CD expectations so generated changes are correct, consistent, and shippable.
 
+## Mandatory
+
+As an autonomous agent you will:
+1. Call vibe_check after planning and before major actions.
+2. Provide the full user request and your current plan.
+3. Optionally, record resolved issues with vibe_learn.
+
 ## Repo map and responsibilities
 
 - `frontend/` — React app (Vite). Tests with Vitest + Testing Library.
@@ -74,41 +81,21 @@ Backend (FastAPI)
 	- Confirm `frontend/package-lock.json` is present in the commit.
 	- Ensure `cache-dependency-path` points to `frontend/package-lock.json`.
 
-## Available MCP services
+## Available MCP servers
 
-These are the MCP (managed control-plane) server categories available to the assistant in this environment. Use these service names when requesting integrations or automations.
+Only the top-level MCP servers are listed here. Use the server name when requesting integrations or automations.
 
-- GitHub Repository Management
-- GitHub Issue Management
-- GitHub Pull Request Management
-- GitHub Comment Management
-- GitHub File Management
-- GitHub Search Tools
-- GitHub Team Management
-- GitHub Copilot Management
-- GitHub Label Management
-- GitHub User Management
-- Linear Issue Management
-- Linear Project Management
-- Linear Team Management
-- Linear Documentation Tools
-- Browser Interaction Tools (click, fill, evaluate, upload)
-- Browser Navigation Tools (install browser, resize, tabs)
-- Browser Console & Network Tools
-- Browser Screenshot & Accessibility Snapshot Tools
-- YouTube Transcript Tools
-- Library Documentation Resolution Tools
-- Perplexity Research & Reasoning Tools
-- Time Management & Conversion Tools
-- Semgrep Security & Analysis Tools
-- Supabase Database Migrations Management
-- Supabase Edge Functions Management
-- Supabase Project Administration & Logs
-- Supabase TypeScript Types Generation
-- Supabase SQL Execution Tools
-- Supabase Documentation Search
-- Python Environment Configuration Tools
-- shadcn Component Installer
+- GitHub MCP
+- Linear MCP
+- Browser MCP
+- Perplexity MCP
+- Semgrep MCP
+- Supabase MCP
+- Python Environment MCP
+- shadcn MCP
+- Vibecheck MCP
+- Time Management MCP
+- Library Documentation MCP
 
 ## Local development
 
